@@ -1,29 +1,29 @@
 import express from "express";
 import admin from "firebase-admin";
 import cors from "cors";
-import { readFileSync } from "fs";
 
+// EXPRESS SETUP
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load Firebase Admin key
-const serviceAccount = JSON.parse(
-  readFileSync("./serviceAccountKey.json", "utf8")
-);
-
+// FIREBASE ADMIN (ENV-BASED – required for Render)
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+  })
 });
 
-// Example route to send notif
+// ROUTE: Send Push Notification
 app.post("/send-notif", async (req, res) => {
   const { token, title, body } = req.body;
 
   try {
     const message = {
       notification: { title, body },
-      token: token
+      token
     };
 
     const response = await admin.messaging().send(message);
@@ -33,6 +33,6 @@ app.post("/send-notif", async (req, res) => {
   }
 });
 
-// Render will use this port
+// SERVER (Render assigns PORT automatically)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running on port " + PORT));
